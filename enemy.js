@@ -1,0 +1,11 @@
+(function(){
+  "use strict";
+  const DIRS=["down","left","right","up"];
+  class EnemyTank extends Tank{
+    constructor(game,x,y,level=1,type=0){const hp=type===2?3:type===1?2:1;super(game,x,y,{team:"enemy",direction:"down",speed:72+level*4+type*8,hp,power:type===2?2:1,fireRate:Math.max(.62,1.25-level*.035-type*.12),variant:type,spawnProtection:.7});this.level=level;this.aiTimer=.2+Math.random()*.7;this.stuck=0;this.fireIntent=.4+Math.random();this.scoreValue=type===2?500:type===1?300:100}
+    lineOfSight(){const p=this.game.player;if(!p||!p.alive)return null;const c=this.center,pc=p.center,tolerance=18;let direction=null,distance=Infinity;if(Math.abs(c.x-pc.x)<tolerance){direction=pc.y<c.y?"up":"down";distance=Math.abs(pc.y-c.y)}else if(Math.abs(c.y-pc.y)<tolerance){direction=pc.x<c.x?"left":"right";distance=Math.abs(pc.x-c.x)}if(!direction)return null;const v=DirectionVectors[direction];for(let d=20;d<distance;d+=16)if(this.game.map.isBlockingTile(this.game.map.tileAtPixel(c.x+v.x*d,c.y+v.y*d)))return null;return direction}
+    chooseDirection(){const sight=this.lineOfSight();if(sight&&Math.random()<.55+Math.min(.3,this.level*.03))this.direction=sight;else{const towardBase=Math.random()<.28+Math.min(.32,this.level*.025);if(towardBase){const bx=this.game.map.base.x*32+16,by=this.game.map.base.y*32+16;this.direction=Math.abs(bx-this.center.x)>Math.abs(by-this.center.y)?(bx<this.x?"left":"right"):"down"}else this.direction=DIRS[Math.floor(Math.random()*DIRS.length)]}this.aiTimer=.45+Math.random()*Math.max(.35,1.45-this.level*.06)}
+    update(dt){this.updateBase(dt);this.aiTimer-=dt;this.fireIntent-=dt;const sight=this.lineOfSight();if(sight&&this.level>2)this.direction=sight;if(this.aiTimer<=0)this.chooseDirection();const moved=this.move(this.direction,dt);if(!moved){this.stuck+=dt;if(this.stuck>.12){this.chooseDirection();this.stuck=0}}else this.stuck=0;if(this.fireIntent<=0){const chance=sight?.length?1:.45+Math.min(.4,this.level*.035);if(Math.random()<chance){const b=this.shoot();if(b)this.game.addBullet(b)}this.fireIntent=.55+Math.random()*Math.max(.45,1.45-this.level*.035)}}
+  }
+  window.EnemyTank=EnemyTank;
+})();
